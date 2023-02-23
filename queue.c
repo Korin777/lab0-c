@@ -252,6 +252,7 @@ int q_descend(struct list_head *head)
             ++count;
         } else {
             list_del(itr);
+            q_release_element(list_entry(itr, element_t, list));
         }
     }
     return count;
