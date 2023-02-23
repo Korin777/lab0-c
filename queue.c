@@ -209,7 +209,30 @@ void q_reverseK(struct list_head *head, int k)
 }
 
 /* Sort elements of queue in ascending order */
-void q_sort(struct list_head *head) {}
+void q_sort(struct list_head *head)
+{
+    if (!head || list_empty(head) || head->next == head->prev)
+        return;
+    struct list_head less, greater;
+    INIT_LIST_HEAD(&less);
+    INIT_LIST_HEAD(&greater);
+    struct list_head *pivot = head->next;
+    char *pivot_val = list_entry(pivot, element_t, list)->value;
+    list_del(pivot);
+    struct list_head *itr, *safe;
+    list_for_each_safe (itr, safe, head) {
+        if (strcmp(list_entry(itr, element_t, list)->value, pivot_val) <= 0)
+            list_add(itr, &less);
+        else
+            list_add(itr, &greater);
+    }
+    q_sort(&less);
+    q_sort(&greater);
+    INIT_LIST_HEAD(head);
+    list_add(pivot, head);
+    list_splice(&less, head);
+    list_splice_tail(&greater, head);
+}
 
 /* Remove every node which has a node with a strictly greater value anywhere to
  * the right side of it */
@@ -259,7 +282,6 @@ int q_merge(struct list_head *head)
                     node_merge = node_merge->next;
             }
             list_add_tail(q_itr, node_merge);
-            printf("%s\n", list_entry(q_itr, element_t, list)->value);
         }
         INIT_LIST_HEAD(q_other);
     }
