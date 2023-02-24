@@ -213,23 +213,38 @@ void q_sort(struct list_head *head)
 {
     if (!head || list_empty(head) || head->next == head->prev)
         return;
-    struct list_head less, greater;
+    struct list_head less, greater, middle;
     INIT_LIST_HEAD(&less);
     INIT_LIST_HEAD(&greater);
+    INIT_LIST_HEAD(&middle);
     struct list_head *pivot = head->next;
     char *pivot_val = list_entry(pivot, element_t, list)->value;
     list_del(pivot);
     struct list_head *itr, *safe;
+    bool less_change = true, greater_change = true;
     list_for_each_safe (itr, safe, head) {
-        if (strcmp(list_entry(itr, element_t, list)->value, pivot_val) <= 0)
-            list_add(itr, &less);
-        else
-            list_add(itr, &greater);
+        int result = strcmp(list_entry(itr, element_t, list)->value, pivot_val);
+        if (result < 0) {
+            if (less_change)
+                list_add(itr, &less);
+            else
+                list_add_tail(itr, &less);
+            less_change = !less_change;
+        } else if (result > 0) {
+            if (greater_change)
+                list_add(itr, &greater);
+            else
+                list_add_tail(itr, &greater);
+            greater_change = !greater_change;
+        } else {
+            list_add(itr, &middle);
+        }
     }
     q_sort(&less);
     q_sort(&greater);
     INIT_LIST_HEAD(head);
     list_add(pivot, head);
+    list_splice(&middle, head);
     list_splice(&less, head);
     list_splice_tail(&greater, head);
 }
