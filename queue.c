@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -208,8 +209,48 @@ void q_reverseK(struct list_head *head, int k)
     }
 }
 
-/* Sort elements of queue in ascending order */
-void q_sort(struct list_head *head)
+
+static struct list_head *split(struct list_head *head)
+{
+    struct list_head *fast = head, *slow = head;
+    while (fast->next && fast->next->next) {
+        fast = fast->next->next;
+        slow = slow->next;
+    }
+    struct list_head *b = slow->next;
+    slow->next = NULL;
+    return b;
+}
+
+
+static struct list_head *merge(struct list_head *a, struct list_head *b)
+{
+    // ptr : Update list_head->next to link node
+    // node : Each comparison will advance one either a or b
+    struct list_head *head = NULL, **ptr = &head, **node;
+    for (; a && b; *node = (*node)->next) {
+        node = strcmp(list_entry(a, element_t, list)->value,
+                      list_entry(b, element_t, list)->value) <= 0
+                   ? &a
+                   : &b;
+        *ptr = *node;
+        ptr = &(*ptr)->next;
+    }
+    *ptr = (struct list_head *) ((uintptr_t) a | (uintptr_t) b);
+    return head;
+}
+
+static struct list_head *MergeSort(struct list_head *a)
+{
+    struct list_head *b = split(a);
+    if (a->next)
+        a = MergeSort(a);
+    if (b->next)
+        b = MergeSort(b);
+    return merge(a, b);
+}
+
+static void QuickSort(struct list_head *head)
 {
     if (!head || list_empty(head) || head->next == head->prev)
         return;
@@ -240,13 +281,36 @@ void q_sort(struct list_head *head)
             list_add(itr, &middle);
         }
     }
-    q_sort(&less);
-    q_sort(&greater);
+    QuickSort(&less);
+    QuickSort(&greater);
     INIT_LIST_HEAD(head);
     list_add(pivot, head);
     list_splice(&middle, head);
     list_splice(&less, head);
     list_splice_tail(&greater, head);
+}
+
+int sort_option = 1;
+/* Sort elements of queue in ascending order */
+void q_sort(struct list_head *head)
+{
+    if (!head || list_empty(head) || head->next == head->prev)
+        return;
+    if (sort_option) {  // merge sort
+        head->prev->next = NULL;
+        head->next = MergeSort(head->next);
+        // fix prev pointer
+        struct list_head *prev, *cur = head;
+        while (cur->next) {
+            prev = cur;
+            cur = cur->next;
+            cur->prev = prev;
+        }
+        head->prev = cur;
+        cur->next = head;
+    } else {  // quick sort
+        QuickSort(head);
+    }
 }
 
 /* Remove every node which has a node with a strictly greater value anywhere to

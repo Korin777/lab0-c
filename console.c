@@ -413,6 +413,15 @@ static bool do_web(int argc, char *argv[])
     return true;
 }
 
+
+static bool do_sortOption(int argc, char *argv[])
+{
+    if (argc == 2) {
+        sort_option = atoi(argv[1]);
+    }
+    return true;
+}
+
 /* Initialize interpreter */
 void init_cmd()
 {
@@ -430,6 +439,10 @@ void init_cmd()
     ADD_COMMAND(log, "Copy output to file", "file");
     ADD_COMMAND(time, "Time command execution", "cmd arg ...");
     ADD_COMMAND(web, "Read commands from builtin web server", "[port]");
+    ADD_COMMAND(
+        sortOption,
+        "Choose Sort algorithm, n: 1=>mergesort, 0=>quicksort, defatult=1",
+        "[n]");
     add_cmd("#", do_comment_cmd, "Display comment", "...");
     add_param("simulation", &simulation, "Start/Stop simulation mode", NULL);
     add_param("verbose", &verblevel, "Verbosity level", NULL);
