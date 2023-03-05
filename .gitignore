@@ -24,3 +24,9 @@ GPATH
 GRTAGS
 GSYMS
 GTAGS
+
+# test_sort
+*.txt
+ksort
+quick_sort
+merge_sort
