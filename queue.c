@@ -249,6 +249,66 @@ static struct list_head *MergeSort(struct list_head *a)
         b = MergeSort(b);
     return merge(a, b);
 }
+__attribute__((unused)) static void mergeSort_iterative_buttomup(
+    struct list_head *head)
+{
+    // first merge 1:1
+    struct list_head *a = head->next, *b = NULL, *next_a, *prev_head = head;
+    while (a && a->next) {
+        b = a->next;
+        next_a = b->next;
+        if (strcmp(list_entry(a, element_t, list)->value,
+                   list_entry(b, element_t, list)->value) <= 0) {
+            a->next = b;
+            prev_head->prev = a;
+            prev_head = a;
+            b->prev = NULL;
+            b->next = NULL;
+        } else {
+            b->next = a;
+            prev_head->prev = b;
+            prev_head = b;
+            a->prev = NULL;
+            a->next = NULL;
+        }
+        a = next_a;
+    }
+    if (a) {
+        prev_head->prev = a;
+        prev_head = a;
+    }
+    prev_head->prev = NULL;
+
+    while (head->prev->prev) {  // check merge block chain is one
+        a = head->prev;
+        prev_head = head;
+        while (a && a->prev) {
+            b = a->prev;
+            next_a = b->prev;
+            a->prev = NULL;
+            b->prev = NULL;
+
+            // merge
+            struct list_head *merge_head = NULL, **ptr = &merge_head, **node;
+            for (; a && b; *node = (*node)->next) {
+                node = strcmp(list_entry(a, element_t, list)->value,
+                              list_entry(b, element_t, list)->value) <= 0
+                           ? &a
+                           : &b;
+                *ptr = *node;
+                ptr = &(*ptr)->next;
+            }
+            *ptr = (struct list_head *) ((uintptr_t) a | (uintptr_t) b);
+            prev_head->prev = merge_head;
+            prev_head = merge_head;
+            a = next_a;
+        }
+        if (a)
+            prev_head->prev = a;
+    }
+    head->next = head->prev;
+}
+
 
 static void QuickSort(struct list_head *head)
 {
