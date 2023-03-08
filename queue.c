@@ -240,7 +240,7 @@ static struct list_head *merge(struct list_head *a, struct list_head *b)
     return head;
 }
 
-static struct list_head *MergeSort(struct list_head *a)
+__attribute__((unused)) static struct list_head *MergeSort(struct list_head *a)
 {
     struct list_head *b = split(a);
     if (a->next)
@@ -249,6 +249,7 @@ static struct list_head *MergeSort(struct list_head *a)
         b = MergeSort(b);
     return merge(a, b);
 }
+
 __attribute__((unused)) static void mergeSort_iterative_buttomup(
     struct list_head *head)
 {
@@ -309,8 +310,91 @@ __attribute__((unused)) static void mergeSort_iterative_buttomup(
     head->next = head->prev;
 }
 
+__attribute__((unused)) void mergeSort_iterative_topdown(struct list_head *head)
+{
+    // destroy circular
+    head->prev->next = NULL;
+    // use prev node to chain merge block
+    head->prev = NULL;
 
-static void QuickSort(struct list_head *head)
+    struct list_head *a = head->next, *b, *merge_head = NULL;
+    while (a && a->next) {
+        b = a->next, *a_next = b->next;
+        if (strcmp(list_entry(a, element_t, list)->value,
+                   list_entry(b, element_t, list)->value) <= 0) {
+            merge_head = a;
+            b->prev = NULL;
+            b->next = NULL;
+        } else {
+            b->next = a;
+            merge_head = b;
+            a->prev = NULL;
+            a->next = NULL;
+        }
+        uintptr_t merge_head_size = 0x2;
+        // merge the block with same size
+        b = head->prev;
+        while (b) {
+            struct list_head *b_next = b->prev;
+            // merge
+            if ((uintptr_t) b->next->prev == merge_head_size) {
+                // remove block from merge block chain
+                b->prev = NULL;
+                struct list_head *new_head = NULL, **ptr = &new_head, **node;
+                for (; merge_head && b; *node = (*node)->next) {
+                    node =
+                        strcmp(list_entry(merge_head, element_t, list)->value,
+                               list_entry(b, element_t, list)->value) <= 0
+                            ? &merge_head
+                            : &b;
+                    *ptr = *node;
+                    ptr = &(*ptr)->next;
+                }
+                *ptr = (struct list_head *) ((uintptr_t) merge_head |
+                                             (uintptr_t) b);
+                merge_head = new_head;
+                merge_head_size <<= 1;
+            } else {
+                break;
+            }
+            b = b_next;
+        }
+
+        // chain the merge block
+        merge_head->next->prev = (struct list_head *) merge_head_size;
+        merge_head->prev = b;
+
+        head->prev = merge_head;
+
+        a = a_next;
+    }
+    if (a) {
+        a->prev = merge_head;
+        merge_head = a;
+    }
+
+    // merge the block in merge block chain if block chain more than one
+    b = merge_head->prev;
+    while (b) {
+        struct list_head *b_next = b->prev;
+        b->prev = NULL;
+        struct list_head *new_head = NULL, **ptr = &new_head, **node;
+        for (; merge_head && b; *node = (*node)->next) {
+            node = strcmp(list_entry(merge_head, element_t, list)->value,
+                          list_entry(b, element_t, list)->value) <= 0
+                       ? &merge_head
+                       : &b;
+            *ptr = *node;
+            ptr = &(*ptr)->next;
+        }
+        *ptr = (struct list_head *) ((uintptr_t) merge_head | (uintptr_t) b);
+        merge_head = new_head;
+        b = b_next;
+    }
+    head->next = merge_head;
+}
+
+__attribute__((unused)) static void QuickSort(struct list_head *head)
 {
     if (!head || list_empty(head) || head->next == head->prev)
         return;
@@ -356,6 +440,7 @@ void q_sort(struct list_head *head)
 {
     if (!head || list_empty(head) || head->next == head->prev)
         return;
+
     if (sort_option) {  // merge sort
         head->prev->next = NULL;
         head->next = MergeSort(head->next);
